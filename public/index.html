@@ -1,0 +1,93 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <meta charset="UTF-8">
+  <title>Cubos - Paciente</title>
+  <script src="/socket.io/socket.io.js"></script>
+  <style>
+    body {
+      font-family: Arial;
+      text-align: center;
+      background: #f5f5f5;
+    }
+    #grid {
+      display: grid;
+      gap: 5px;
+      justify-content: center;
+      margin: 20px auto;
+    }
+    .cell {
+      width: 60px;
+      height: 60px;
+      background: white;
+      border: 1px solid #ccc;
+      cursor: pointer;
+    }
+    .active {
+      background: #4cafef;
+    }
+    button {
+      padding: 10px 20px;
+      margin: 10px;
+      font-size: 16px;
+    }
+  </style>
+</head>
+<body>
+
+<h2>Teste dos Cubos</h2>
+
+<div id="timer">Tempo: 0s</div>
+
+<div id="grid"></div>
+
+<button onclick="finish()">Finalizar</button>
+
+<script>
+  const socket = io();
+  let size = 2;
+  let limit = 60;
+  let interval = null;
+
+  const grid = document.getElementById("grid");
+  const timer = document.getElementById("timer");
+
+  function drawGrid(n) {
+    grid.innerHTML = "";
+    grid.style.gridTemplateColumns = `repeat(${n}, 60px)`;
+    for (let i = 0; i < n*n; i++) {
+      const cell = document.createElement("div");
+      cell.className = "cell";
+      cell.onclick = () => cell.classList.toggle("active");
+      grid.appendChild(cell);
+    }
+  }
+
+  socket.on("update", (state) => {
+    size = state.size;
+    limit = state.limit;
+    timer.innerText = `Tempo: ${state.elapsed}s`;
+
+    if (state.running && !interval) {
+      interval = setInterval(() => {
+        socket.emit("tick");
+      }, 1000);
+    }
+
+    if (!state.running && interval) {
+      clearInterval(interval);
+      interval = null;
+    }
+
+    drawGrid(size);
+  });
+
+  function finish() {
+    socket.emit("finish");
+  }
+
+  drawGrid(size);
+</script>
+
+</body>
+</html>
